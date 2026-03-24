@@ -1,0 +1,52 @@
+module sequence_generator(
+    input clk,          // 100MHz clock from Nexys 4
+    input A,            // Control input
+    input B,            // New input - always show LEDs when B=1
+    output reg [2:0] led // 3-bit output for LEDs
+);
+
+    // Sequence definition: 4, 2, 5, 6, 1, 3
+    reg [2:0] sequence [0:5];
+    reg [2:0] current_number;
+    reg [31:0] counter;
+    reg [2:0] state;
+    
+    // Initialize sequence
+    initial begin
+        sequence[0] = 3'b100; // 4
+        sequence[1] = 3'b010; // 2
+        sequence[2] = 3'b101; // 5
+        sequence[3] = 3'b110; // 6
+        sequence[4] = 3'b001; // 1
+        sequence[5] = 3'b011; // 3
+        state = 0;
+        counter = 0;
+        current_number = sequence[0];
+    end
+    
+    // 0.5 second timer (50,000,000 cycles for 100MHz clock)
+    always @(posedge clk) begin
+        if (A == 1'b0) begin // When A=0, counter runs
+            if (counter >= 32'd50_000_000) begin
+                counter <= 0;
+                state <= (state == 3'd5) ? 3'd0 : state + 3'd1;
+                current_number <= sequence[state];
+            end else begin
+                counter <= counter + 1;
+            end
+        end
+        // When A=1, counter stops and holds current value
+    end
+    
+    // Output to LEDs
+    always @(posedge clk) begin
+// CHANGED: Modified conditional logic to include input B
+        if (A == 1'b1 || B == 1'b1) begin
+            led <= current_number;  // Show current number when A=1 OR B=1
+        end else begin
+            led <= 3'b000;          // LEDs off when both A=0 AND B=0
+        end
+// END CHANGES
+    end
+
+endmodule
